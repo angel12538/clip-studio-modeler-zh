@@ -26,3 +26,11 @@ work/
 *.log
 *.png
 *.jpg
+
+# 鎵撳寘浜х墿锛坋xe 浣滀负 Release 闄勪欢鍙戝竷锛屼笉杩涗粨搴擄級
+build/
+dist/
+*.spec
+
+# Release 附件不进仓库
+*.zip

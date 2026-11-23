@@ -116,14 +116,29 @@ japanese · english · chinese_sc · chinese_tc · french · spanish · korean �
 
 ## 使用方法
 
-### 环境要求
+### 方式一：exe（推荐，免安装 Python）
+
+1. 到 [Releases](https://github.com/angel12538/clip-studio-modeler-zh/releases) 下载
+   `MODELER-ZH-v*-win64.zip`，解压到任意目录
+2. **完全退出** CLIP STUDIO MODELER（含托盘图标）
+3. 双击 `MODELER-ZH.exe`
+   - 若提示需要管理员权限，选择自动提权（会弹 UAC）
+4. 按提示操作，最后启动 MODELER
+
+exe 会自动完成检测、汉化、材质标签处理。
+
+> 提示：如果双击后闪退，试试右键 → 以管理员身份运行。
+
+### 方式二：Python 脚本
+
+#### 环境要求
 
 - Windows（本工具在 Windows 10/11 + Python 3.12 下测试）
 - Python 3.8 或更高
 - 已安装正版 CLIP STUDIO MODELER（国际版，带 `resource\english\` 目录）
 - 运行 MODELER 至少一次（生成材质数据库）
 
-### 步骤
+#### 步骤
 
 **1. 获取本项目**
 
@@ -132,7 +147,32 @@ git clone https://github.com/angel12538/clip-studio-modeler-zh.git
 cd clip-studio-modeler-zh
 ```
 
-**2. 修改语言标识**
+**2. 一键汉化**
+
+双击 `一键汉化.cmd`，按提示操作即可。
+
+它依次完成：检测 Python → 定位安装目录 → 检查语言标识 → 生成资源 → 询问是否汉化标签。
+
+**3. 或者手动执行**
+
+```bash
+python tools/apply_all.py           # 预演，看看会替换多少条
+python tools/apply_all.py --apply   # 实际写入
+python tools/apply_tags.py --apply  # 汉化材质标签（可选）
+
+python tools/progress.py            # 查看进度
+python tools/rollback.py --apply    # 还原
+```
+
+脚本会自动定位 MODELER 安装目录。若定位失败，手动指定：
+
+```bat
+set MODELER_DIR=D:\Program Files\CELSYS\CLIP STUDIO 1.5\CLIP STUDIO MODELER
+```
+
+### 语言标识（必需）
+
+无论用哪种方式，都需要把语言标识改成 `chinese_tc`：
 
 用**管理员权限**的记事本打开：
 
@@ -143,46 +183,7 @@ C:\ProgramData\CELSYS\CLIPStudio\InstallPath\modeler15.txt
 把 `"Language"="english"` 改为 `"Language"="chinese_tc"`，保存。
 
 > 该文件权限较严，普通编辑会被拒绝访问。
-
-**3. 生成中文资源**
-
-```bash
-python tools/apply_all.py           # 预演，看看会替换多少条
-python tools/apply_all.py --apply   # 实际写入
-```
-
-脚本会自动定位 MODELER 安装目录。若定位失败，手动指定：
-
-```bat
-set MODELER_DIR=D:\Program Files\CELSYS\CLIP STUDIO 1.5\CLIP STUDIO MODELER
-```
-
-**4. 汉化材质标签（可选）**
-
-```bash
-python tools/apply_tags.py --apply
-```
-
-> 执行前请完全退出 MODELER，否则内存中的旧标签会在退出时覆盖磁盘改动。
-
-**5. 启动 MODELER**
-
-界面即为简体中文。
-
-### 查看进度
-
-```bash
-python tools/progress.py
-```
-
-### 还原
-
-```bash
-python tools/rollback.py --apply
-```
-
-会删除中文资源目录、用反向词典把材质标签改回英文。
-语言标识需手动改回 `english`。
+> `一键汉化.cmd` 和 exe 会检查这一项并引导你修改。
 
 ---
 
