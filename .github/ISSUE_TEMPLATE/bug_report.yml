@@ -1,0 +1,71 @@
+name: 报告问题
+description: 汉化后出现异常、程序崩溃、或界面显示错误
+title: "[问题] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请尽量填完整，方便定位问题。
+
+  - type: input
+    id: version
+    attributes:
+      label: MODELER 版本
+      description: 在「帮助 → 版本信息」里可以看到
+      placeholder: 例如 1.10.13
+    validations:
+      required: true
+
+  - type: dropdown
+    id: stage
+    attributes:
+      label: 出现问题的环节
+      options:
+        - 修改语言标识后程序无法启动
+        - 运行 apply_all.py 报错
+        - 运行 apply_tags.py 报错
+        - 程序能启动但界面异常
+        - 程序崩溃
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 具体现象
+      description: 描述你看到的情况，有截图更好
+      placeholder: 例如：菜单栏显示为「文件/编辑」，但对话框标题仍是英文
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 运行 python tools/apply_all.py --apply
+        2. 启动 MODELER
+        3. 打开「新建」对话框
+        4. 看到...
+    validations:
+      required: false
+
+  - type: textarea
+    id: error
+    attributes:
+      label: 错误输出
+      description: 如果脚本报错，请粘贴完整输出
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: python
+    attributes:
+      label: Python 版本
+      description: 运行 `python --version` 的结果
+      placeholder: 例如 3.12.1
+    validations:
+      required: false

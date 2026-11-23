@@ -1,0 +1,62 @@
+name: 译文建议
+description: 译文不准确、术语不统一，或者有遗漏
+title: "[译文] "
+labels: ["translation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢帮忙校对。
+
+        如果知道英文原文，请一并填上——这能直接对应到词表里的条目。
+
+  - type: input
+    id: location
+    attributes:
+      label: 位置
+      description: 在哪个界面看到的？例如「文件菜单」「材质面板」「新建对话框」
+      placeholder: 例如：文件 → 导出
+    validations:
+      required: true
+
+  - type: input
+    id: english
+    attributes:
+      label: 英文原文
+      description: 切回英文界面确认的原文，带前后空格也要保留
+      placeholder: 例如 "Export"
+    validations:
+      required: false
+
+  - type: input
+    id: current
+    attributes:
+      label: 当前译文
+      placeholder: 例如 "导出"
+    validations:
+      required: true
+
+  - type: input
+    id: suggested
+    attributes:
+      label: 建议译文
+      placeholder: 例如 "输出"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: 理由
+      description: 为什么这样更好？有官方译法或其他软件先例可以引用
+      placeholder: 例如：CSP 里对应功能叫「输出」，保持一致
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: glossary
+    attributes:
+      label: 术语检查
+      options:
+        - label: 已确认该译文符合「材质 / 资源」术语体系
+        - label: 这是术语表（glossary.py）里的条目，需要一并修改
