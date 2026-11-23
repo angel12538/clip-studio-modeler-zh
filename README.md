@@ -170,20 +170,26 @@ python tools/rollback.py --apply    # 还原
 set MODELER_DIR=D:\Program Files\CELSYS\CLIP STUDIO 1.5\CLIP STUDIO MODELER
 ```
 
-### 语言标识（必需）
+### 语言标识（已自动化）
 
-无论用哪种方式，都需要把语言标识改成 `chinese_tc`：
+语言标识 `C:\ProgramData\CELSYS\CLIPStudio\InstallPath\modeler15.txt`
+里的 `"Language"` 必须为 `chinese_tc`，否则程序不会去读中文资源目录。
 
-用**管理员权限**的记事本打开：
+**exe 与 `一键汉化.cmd` 会自动处理这一步**——启动时请求管理员权限（UAC），
+然后在管理员上下文里直接修改，改完自动校验。
 
-```
-C:\ProgramData\CELSYS\CLIPStudio\InstallPath\modeler15.txt
-```
+若你想手动改：
 
-把 `"Language"="english"` 改为 `"Language"="chinese_tc"`，保存。
+1. 用**管理员权限**的记事本打开上述文件
+2. 把 `"Language"="english"` 改为 `"Language"="chinese_tc"`
+3. 保存
 
-> 该文件权限较严，普通编辑会被拒绝访问。
-> `一键汉化.cmd` 和 exe 会检查这一项并引导你修改。
+> 该文件 ACL 只给 Users 读权限，普通编辑会被拒绝访问。
+>
+> ⚠ 注意：不要用「先截断再写入」的方式改这个文件
+> （如 `File.WriteAllText`、`open(path,'w')`）。
+> 一旦写入被拒，会留下 0 字节的空文件，导致 MODELER 无法启动。
+> 本项目采用「写临时文件 → 校验 → 原子替换」的方式，失败会自动从 `.bak` 恢复。
 
 ---
 

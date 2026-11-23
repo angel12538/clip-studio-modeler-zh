@@ -65,24 +65,166 @@ def is_admin():
 
 
 def relaunch_as_admin():
-    """以管理员身份重新启动自己。成功返回 True。"""
+    """以管理员身份重新启动自己，带上 --elevated 标记避免无限循环。"""
     import ctypes
+    args = [a for a in sys.argv[1:] if a != '--elevated']
+    args.append('--elevated')
+
     if getattr(sys, 'frozen', False):
         exe = sys.executable
-        params = ' '.join('"%s"' % a for a in sys.argv[1:])
+        params = ' '.join('"%s"' % a for a in args)
     else:
         exe = sys.executable
-        params = '"%s"' % os.path.abspath(__file__)
-        if sys.argv[1:]:
-            params += ' ' + ' '.join('"%s"' % a for a in sys.argv[1:])
+        params = '"%s" ' % os.path.abspath(__file__)
+        params += ' '.join('"%s"' % a for a in args)
 
     try:
-        # ShellExecuteW 返回 > 32 表示成功
         r = ctypes.windll.shell32.ShellExecuteW(
             None, 'runas', exe, params, os.getcwd(), 1)
         return r > 32
     except Exception:
         return False
+
+
+def config_path():
+    """modeler15.txt 的路径。"""
+    return os.path.join(
+        os.environ.get('ProgramData', r'C:\ProgramData'),
+        'CELSYS', 'CLIPStudio', 'InstallPath', 'modeler15.txt')
+
+
+def read_language():
+    """读取当前语言标识，失败返回 None。"""
+    p = config_path()
+    if not os.path.exists(p):
+        return None
+    try:
+        with open(p, 'r', encoding='utf-8', errors='ignore') as f:
+            text = f.read()
+    except OSError:
+        return None
+    import re
+    m = re.search(r'"Language"\s*=\s*"([^"]*)"', text)
+    return m.group(1) if m else None
+
+
+def set_language(target='chinese_tc'):
+    """把语言标识改为指定值。
+
+    安全措施：open(path, 'w') 会先截断目标文件再写，
+    一旦写入被拒就会留下 0 字节的坏文件。
+    所以改为：写临时文件 -> 校验 -> 替换，失败则从备份恢复。
+
+    返回 (成功, 说明)。
+    """
+    import re
+    import shutil
+
+    p = config_path()
+    if not os.path.exists(p):
+        return False, '找不到 %s' % p
+
+    bak = p + '.bak'
+    tmp = p + '.new'
+
+    # 读取原内容；若已是坏的则尝试从备份恢复
+    try:
+        with open(p, 'r', encoding='utf-8', errors='ignore') as f:
+            text = f.read()
+    except OSError as e:
+        return False, '无法读取：%s' % e
+
+    if len(text) < 20:
+        if os.path.exists(bak):
+            try:
+                with open(bak, 'r', encoding='utf-8', errors='ignore') as f:
+                    text = f.read()
+            except OSError:
+                return False, '目标文件为空且备份不可读'
+        else:
+            return False, '目标文件为空且无备份'
+
+    # 刷新备份
+    try:
+        with open(bak, 'w', encoding='utf-8', newline='') as f:
+            f.write(text)
+    except OSError:
+        pass
+
+    if '"Language"="%s"' % target in text:
+        return True, '已是 %s' % target
+
+    new = re.sub(r'"Language"\s*=\s*"[^"]*"',
+                 '"Language"="%s"' % target, text)
+    if new == text:
+        return False, '文件里没有找到 Language 行'
+    if 'AppPath15' not in new:
+        return False, '替换结果异常，已中止'
+
+    # 写临时文件并校验
+    try:
+        with open(tmp, 'w', encoding='utf-8', newline='') as f:
+            f.write(new)
+        with open(tmp, 'r', encoding='utf-8') as f:
+            if f.read() != new:
+                os.remove(tmp)
+                return False, '临时文件校验失败'
+    except PermissionError:
+        return False, '没有写入权限'
+    except OSError as e:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        return False, '写入临时文件失败：%s' % e
+
+    # 替换
+    try:
+        os.remove(p)
+        os.replace(tmp, p)
+    except OSError as e:
+        # 替换失败：从备份恢复，不留坏文件
+        try:
+            if os.path.exists(bak):
+                shutil.copy2(bak, p)
+        except OSError:
+            pass
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        return False, '替换失败（已尝试恢复备份）：%s' % e
+
+    # 最终校验
+    try:
+        with open(p, 'r', encoding='utf-8', errors='ignore') as f:
+            final = f.read()
+    except OSError:
+        return False, '无法读回最终文件'
+
+    if '"Language"="%s"' % target in final and len(final) > 20:
+        return True, '已改为 %s' % target
+    return False, '最终校验未通过'
+
+
+def ensure_language():
+    """确保语言标识为 chinese_tc。已是则跳过，否则直接修改。"""
+    cur = read_language()
+    if cur is None:
+        print('  未找到 modeler15.txt，跳过（若程序能显示中文可忽略）')
+        return True
+    if cur == 'chinese_tc':
+        print('  已是 chinese_tc，无需修改')
+        return True
+
+    print('  当前为「%s」，正在改为 chinese_tc...' % cur)
+    ok, msg = set_language('chinese_tc')
+    if ok:
+        print('  %s' % msg)
+        return True
+
+    print('  修改失败：%s' % msg)
+    return False
 
 
 def can_write_resource():
@@ -343,6 +485,31 @@ def check_language():
 
 
 def main():
+    # ---------- 提权：修改语言标识与写入资源目录都需要管理员 ----------
+    elevated = '--elevated' in sys.argv
+    if sys.platform == 'win32' and not is_admin() and not elevated:
+        print(BANNER)
+        print('本工具需要管理员权限：')
+        print('  · 修改语言标识 modeler15.txt')
+        print('  · 写入 MODELER 安装目录的资源文件')
+        print()
+        print('正在请求提权，请在弹出的 UAC 窗口点【是】。')
+        print('若已取消，本窗口会以普通权限继续（可能失败）。')
+        print()
+
+        if relaunch_as_admin():
+            print('已在管理员窗口中启动，本窗口即将关闭...')
+            import time
+            time.sleep(2)
+            return
+        print('提权未成功，以普通权限继续。')
+        print()
+        try:
+            input('按回车继续...')
+        except (EOFError, KeyboardInterrupt):
+            return
+        print()
+
     print(BANNER)
 
     print('提示：请先完全退出 CLIP STUDIO MODELER（含托盘图标）。')
@@ -366,40 +533,11 @@ def main():
         return
     config.describe()
 
-    # 权限检查
-    print()
-    print('[权限] 检查写入权限')
-    print()
-    if can_write_resource():
-        print('  有写入权限' + ('（管理员）' if is_admin() else ''))
-    else:
-        print('  当前没有写入资源目录的权限。')
-        print('  需要以管理员身份运行。')
-        print()
-        if ask('是否自动请求管理员权限', 'y'):
-            print()
-            print('  正在请求提权，请在弹出的 UAC 窗口点【是】...')
-            if relaunch_as_admin():
-                print('  已启动新窗口，请在那里继续操作。')
-                print('  本窗口即将关闭。')
-                import time
-                time.sleep(3)
-                return
-            else:
-                print('  提权失败或被取消。')
-                print('  请手动右键 exe，选择"以管理员身份运行"。')
-                pause()
-                return
-        else:
-            print('  请手动右键 exe，选择"以管理员身份运行"。')
-            pause()
-            return
-
-    # 2. 语言标识
+    # 2. 语言标识（自动修改）
     print()
     print('[2/4] 检查语言标识')
     print()
-    check_language()
+    ensure_language()
 
     # 3. 词表
     print()
