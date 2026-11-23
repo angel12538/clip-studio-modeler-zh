@@ -4,7 +4,7 @@
 ZH_BATCH3 = {
     # ---- 提示与错误 ----
     'Cannot add 3D model with bones.': '无法添加带骨骼的 3D 模型。',
-    'Cannot copy from original’s sub-folder.': '无法从原资料的子文件夹复制。',
+    'Cannot copy from original’s sub-folder.': '无法从原始素材的子文件夹复制。',
     'Cannot execute process because there are too many folders.': '文件夹过多，无法执行此操作。',
     'Cannot execute process due to an error.': '因错误无法执行此操作。',
     'Cannot set size above 9999.99': '尺寸不能超过 9999.99',
